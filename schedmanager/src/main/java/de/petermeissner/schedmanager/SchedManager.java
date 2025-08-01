@@ -3,11 +3,11 @@ package de.petermeissner.schedmanager;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
+import util.JndiUtil;
 
 import javax.naming.InitialContext;
-import javax.naming.NameClassPair;
-import javax.naming.NamingEnumeration;
-import java.util.ArrayList;
+import javax.naming.NamingException;
+import java.util.HashMap;
 import java.util.List;
 
 @Singleton
@@ -15,29 +15,31 @@ import java.util.List;
 public class SchedManager {
     private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
+
     @PostConstruct
     public void postConstruct() {
         log.info("SchedManager initialized. Querying EJBs...");
-        listJndi("").forEach(name -> log.info("Found EJB: {}", name));
-        listJndi("java:global").forEach(name -> log.info("Found EJB: {}", name));
-    }
-
-    public List<String> listJndi(String path) {
-        ArrayList<String> lst = new ArrayList<>();
 
         try {
-            InitialContext ctx = new InitialContext();
-            NamingEnumeration<NameClassPair> list = ctx.list(path);
-            log.info("List of EJBs in the application server:");
-            while (list.hasMoreElements()) {
-                NameClassPair pair = list.nextElement();
-                String name = pair.getName();
-                lst.add(name);
-            }
-        } catch (Exception e) {
-            log.error("Error querying JNDI for EJBs", e);
-        }
+            List<HashMap<String, String>> objList = JndiUtil.listJndiItems("java:global");
+            objList.forEach(p -> log.info("Found in \"java:global\": \n  {} \n  {} \n  {}", p.get("path"), p.get("name"), p.get("lookup")));
 
-        return lst;
+            InitialContext ctx = new InitialContext();
+
+            Object obj = ctx.lookup("java:global/schedmanager-1.0-SNAPSHOT/SchedManager!de.petermeissner.schedmanager.SchedManager");
+            log.info("Lookup result: {}", obj);
+
+            Object obj2 = ctx.lookup("java:global/schedmanager-1.0-SNAPSHOT/SchedManager");
+            log.info("Lookup result: {}", obj2);
+
+            for ( HashMap<String, String> item : objList) {
+//                String lookup = item.get("path") + "/" + item.get("name");
+//                log.info("path: {}; name: {}; className {}", item.get("path"), item.get("name"), item.get("className"));
+                log.info("Looking up : {}", item.get("lookup"));
+                log.info("object lookup:" + ctx.lookup(item.get("lookup")));
+            }
+        } catch (NamingException e) {
+            log.error("Error listing JNDI items", e);
+        }
     }
 }
