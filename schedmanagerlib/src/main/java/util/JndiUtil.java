@@ -12,10 +12,9 @@ public class JndiUtil {
     /**
      * Lists (recursively) all JNDI items in the specified path.
      *
-     * @param path the JNDI path to query, e.g. "java:global" or "java:app"
-     *
+     * @param path             the JNDI path to query, e.g. "java:global" or "java:app"
      * @param matchNamePattern a regex pattern to match item names against; if null or empty, all items are returned
-     * @param invertMatch if true, only items that do NOT match the pattern are returned
+     * @param invertMatch      if true, only items that do NOT match the pattern are returned
      *
      * @return List of Hashmaps containing JNDI item details:
      *         "name": the name of the JNDI item;
@@ -47,7 +46,7 @@ public class JndiUtil {
                 hashMapList.addAll(listJndiItems(pathx, matchNamePattern, invertMatch)); // recursive call for sub-contexts
             } else {
                 // check if the name matches the pattern
-                if( matchNamePattern == null || matchNamePattern.isEmpty() ) {
+                if (matchNamePattern == null || matchNamePattern.isEmpty()) {
                     matchNamePattern = ".*"; // default to match all names
                 }
                 boolean matches = pair.getName().matches(matchNamePattern);
@@ -58,7 +57,7 @@ public class JndiUtil {
                 }
 
                 // add results if name pattern matches
-                if( matches ) {
+                if (matches) {
                     HashMap<String, String> hm = new HashMap<>();
                     hm.put("name", pair.getName());
                     hm.put("className", pair.getClassName());
@@ -71,7 +70,7 @@ public class JndiUtil {
 
         return hashMapList;
     }
-    
+
     /**
      * @see #listJndiItems(String, String, boolean)
      */
@@ -85,5 +84,19 @@ public class JndiUtil {
      */
     public static List<HashMap<String, String>> listJndiItems(String path, String matchNamePattern) throws NamingException {
         return listJndiItems(path, matchNamePattern, false);
+    }
+
+
+    /**
+     * Check if an object, e.g. retrieved by JNDI lookup is a proxy object or not
+     *
+     * @param obj object to check
+     */
+    public static boolean isProxy(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        Class<?> clazz = obj.getClass();
+        return (clazz.getName().contains("Proxy") || clazz.getName().contains("$") || clazz.toString().toLowerCase().contains("proxy"));
     }
 }

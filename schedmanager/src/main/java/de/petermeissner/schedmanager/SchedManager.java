@@ -1,5 +1,6 @@
 package de.petermeissner.schedmanager;
 
+import annotations.SchedAnnotation;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
@@ -7,8 +8,10 @@ import util.JndiUtil;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.List;
+
 
 @Singleton
 @Startup
@@ -26,17 +29,40 @@ public class SchedManager {
 
             InitialContext ctx = new InitialContext();
 
-            Object obj = ctx.lookup("java:global/schedmanager-1.0-SNAPSHOT/SchedManager!de.petermeissner.schedmanager.SchedManager");
-            log.info("Lookup result: {}", obj);
-
-            Object obj2 = ctx.lookup("java:global/schedmanager-1.0-SNAPSHOT/SchedManager");
-            log.info("Lookup result: {}", obj2);
-
-            for ( HashMap<String, String> item : objList) {
-//                String lookup = item.get("path") + "/" + item.get("name");
-//                log.info("path: {}; name: {}; className {}", item.get("path"), item.get("name"), item.get("className"));
+            for (HashMap<String, String> item : objList) {
                 log.info("Looking up : {}", item.get("lookup"));
-                log.info("object lookup:" + ctx.lookup(item.get("lookup")));
+
+                Object obj = ctx.lookup(item.get("lookup"));
+                log.info("object lookup:" + obj);
+
+                SchedAnnotation schedAnnotClass = obj.getClass().getAnnotation(SchedAnnotation.class);
+                SchedAnnotation schedAnnotSuper = obj.getClass().getSuperclass().getAnnotation(SchedAnnotation.class);
+                Annotation[] scheds = obj.getClass().getAnnotations();
+                try {
+                    Annotation dings = obj.getClass().getSuperclass().getAnnotations()[2];
+                } catch (Exception e) {
+                    // do nothing 
+                }
+
+                Annotation[] schedsSuper = obj.getClass().getAnnotations();
+                Class<?> actualClass = obj.getClass();
+                if (actualClass.getName().contains("Proxy")) {
+                    actualClass = actualClass.getSuperclass();
+                    log.info("PROXY: SchedAnnotation ? {}", obj.getClass().getSuperclass().isAnnotationPresent(SchedAnnotation.class));
+                } else {
+                    log.info("NOPROXY: SchedAnnotation ? {}", obj.getClass().isAnnotationPresent(SchedAnnotation.class));
+                }
+
+//                AnnotationUtil.getAnnotationNames(obj).forEach(p -> log.info("  - {}", p));
+
+//                SchedAnnotation annot = obj.getClass().getAnnotation(SchedAnnotation.class);
+//                if (null != annot) {
+//                    log.info(annot.description());
+//                    log.info(String.valueOf(annot.enabled()));
+//                    log.info(annot.name());
+//                } else {
+//                    log.info("No SchedAnnotation found");
+//                }
             }
         } catch (NamingException e) {
             log.error("Error listing JNDI items", e);

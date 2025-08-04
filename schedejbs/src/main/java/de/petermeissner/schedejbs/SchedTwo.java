@@ -13,4 +13,6 @@ public class SchedTwo {
     public void init() {
         log.info("SchedTwo initialized.");
     }
+
+    public SchedNoEjb sched = new SchedNoEjb();
 }
