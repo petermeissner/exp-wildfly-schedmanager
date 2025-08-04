@@ -20,3 +20,21 @@ Using Annotations on EJBs sucks.
 The problem is, that interaction with EJBs is - per design - not direct but via proxy. This means it is easy to get a list of running EJBs via JNDI and loop over them, but it is not really possible to get and check for specific annotations on those EJBs because the EJBs themselves are proxied and, it seems, the annotations are proxied as well.  
 
 See commit:  56b0d70
+                             
+
+# Repo Structure
+
+## schedejbs
+
+- example implementation of a schedmanager managed schedule
+
+
+## schedmanager
+
+- the schedmanager itself
+- schedmanager is an EJB for deploying in Jakarta EE environments - e.g. Wildfly
+
+## schedmanagerlib
+
+- utils for schedmanager
+- interfaces and things alike that need to be imported by schedmanager and ejbs that need to managed by schedmanager 
