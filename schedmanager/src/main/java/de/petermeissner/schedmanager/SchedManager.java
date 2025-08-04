@@ -1,6 +1,5 @@
 package de.petermeissner.schedmanager;
 
-import annotations.SchedAnnotation;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
@@ -35,8 +34,6 @@ public class SchedManager {
                 Object obj = ctx.lookup(item.get("lookup"));
                 log.info("object lookup:" + obj);
 
-                SchedAnnotation schedAnnotClass = obj.getClass().getAnnotation(SchedAnnotation.class);
-                SchedAnnotation schedAnnotSuper = obj.getClass().getSuperclass().getAnnotation(SchedAnnotation.class);
                 Annotation[] scheds = obj.getClass().getAnnotations();
                 try {
                     Annotation dings = obj.getClass().getSuperclass().getAnnotations()[2];
@@ -46,23 +43,8 @@ public class SchedManager {
 
                 Annotation[] schedsSuper = obj.getClass().getAnnotations();
                 Class<?> actualClass = obj.getClass();
-                if (actualClass.getName().contains("Proxy")) {
-                    actualClass = actualClass.getSuperclass();
-                    log.info("PROXY: SchedAnnotation ? {}", obj.getClass().getSuperclass().isAnnotationPresent(SchedAnnotation.class));
-                } else {
-                    log.info("NOPROXY: SchedAnnotation ? {}", obj.getClass().isAnnotationPresent(SchedAnnotation.class));
-                }
 
-//                AnnotationUtil.getAnnotationNames(obj).forEach(p -> log.info("  - {}", p));
 
-//                SchedAnnotation annot = obj.getClass().getAnnotation(SchedAnnotation.class);
-//                if (null != annot) {
-//                    log.info(annot.description());
-//                    log.info(String.valueOf(annot.enabled()));
-//                    log.info(annot.name());
-//                } else {
-//                    log.info("No SchedAnnotation found");
-//                }
             }
         } catch (NamingException e) {
             log.error("Error listing JNDI items", e);
