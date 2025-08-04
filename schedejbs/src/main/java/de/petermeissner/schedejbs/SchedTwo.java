@@ -14,5 +14,4 @@ public class SchedTwo {
         log.info("SchedTwo initialized.");
     }
 
-    public SchedNoEjb sched = new SchedNoEjb();
 }
