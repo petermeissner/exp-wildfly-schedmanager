@@ -1,4 +1,4 @@
-package interfaces;
+package share;
 
 public interface CustomSchedulable {
     boolean isEnabled();

@@ -1,3 +1,12 @@
-mvn -f schedmanagerlib/pom.xml clean, install
-mvn -f schedmanager/pom.xml clean, install
-mvn -f schedejbs/pom.xml clean, install
+cd schedmanagerlib
+.\mvnw.cmd clean, install
+cd ..
+
+cd schedmanager
+.\mvnw.cmd clean, install
+cd ..
+
+cd schedejbs
+.\mvnw.cmd clean, install
+cd ..
+

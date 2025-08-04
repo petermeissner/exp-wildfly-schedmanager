@@ -7,7 +7,6 @@
     <groupId>de.petermeissner</groupId>
     <artifactId>schedmanagerlib</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>schedmanagerlib</name>
     <packaging>jar</packaging>
 
     <properties>
@@ -36,6 +35,7 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        
     </dependencies>
 
     <build>

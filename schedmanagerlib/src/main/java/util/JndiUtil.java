@@ -1,5 +1,7 @@
 package util;
 
+import share.ScheduleSuper;
+
 import javax.naming.InitialContext;
 import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
@@ -99,4 +101,50 @@ public class JndiUtil {
         Class<?> clazz = obj.getClass();
         return (clazz.getName().contains("Proxy") || clazz.getName().contains("$") || clazz.toString().toLowerCase().contains("proxy"));
     }
+
+    /**
+     * Looks up all instances of `ScheduleSuper` in the JNDI context.
+     *
+     * @return A list of `ScheduleSuper` instances found in the JNDI context.
+     */
+    public static List<ScheduleSuper> lookupInstancesOfScheduleSuper() {
+        List<ScheduleSuper> instances = new ArrayList<>();
+
+        // jndi context for lookup in jee environment
+        InitialContext ctx;
+        try {
+            ctx = new InitialContext();
+        } catch (NamingException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            List<HashMap<String, String>> items = listJndiItems("java:global");
+            for (HashMap<String, String> item : items) {
+                Object obj;
+
+                // lookup
+                try {
+                    obj = ctx.lookup(item.get("lookup"));
+                } catch (NamingException e) {
+                    throw new RuntimeException(e);
+                }
+
+                // check inheritance
+                boolean check = (obj instanceof ScheduleSuper);
+                boolean check2 = obj.getClass().getSuperclass().getSuperclass().getName().equals(ScheduleSuper.class.getName());
+                System.out.println(obj + " " + check + " || " + check2 + " an instance of ScheduleSuper");
+                if (check || check2) {
+                    instances.add((ScheduleSuper) obj);
+                }
+
+                check = (obj instanceof share.CustomSchedulable);
+            }
+        } catch (NamingException e) {
+            throw new RuntimeException(e);
+        }
+
+        return instances;
+    }
+
 }
