@@ -1,6 +1,6 @@
-package util;
+package de.petermeissner.schedmanager.util;
 
-import share.ScheduleSuper;
+import share.ScheduleSuperInterface;
 
 import javax.naming.InitialContext;
 import javax.naming.NameClassPair;
@@ -107,8 +107,16 @@ public class JndiUtil {
      *
      * @return A list of `ScheduleSuper` instances found in the JNDI context.
      */
-    public static List<ScheduleSuper> lookupInstancesOfScheduleSuper() {
-        List<ScheduleSuper> instances = new ArrayList<>();
+    public static List<ScheduleSuperInterface> lookupScheduleSupers() {
+        List<ScheduleSuperInterface> instances = new ArrayList<>();
+
+        // list all JNDI items in the "java:global" context
+        List<HashMap<String, String>> items;
+        try {
+            items = listJndiItems("java:global");
+        } catch (NamingException e) {
+            throw new RuntimeException(e);
+        }
 
         // jndi context for lookup in jee environment
         InitialContext ctx;
@@ -118,30 +126,18 @@ public class JndiUtil {
             throw new RuntimeException(e);
         }
 
-        try {
-            List<HashMap<String, String>> items = listJndiItems("java:global");
-            for (HashMap<String, String> item : items) {
-                Object obj;
+        // go through all JNDI items in the "java:global" context and retrieve
+        for (HashMap<String, String> item : items) {
+            Object obj;
 
-                // lookup
-                try {
-                    obj = ctx.lookup(item.get("lookup"));
-                } catch (NamingException e) {
-                    throw new RuntimeException(e);
-                }
-
-                // check inheritance
-                boolean check = (obj instanceof ScheduleSuper);
-                boolean check2 = obj.getClass().getSuperclass().getSuperclass().getName().equals(ScheduleSuper.class.getName());
-                System.out.println(obj + " " + check + " || " + check2 + " an instance of ScheduleSuper");
-                if (check || check2) {
-                    instances.add((ScheduleSuper) obj);
-                }
-
-                check = (obj instanceof share.CustomSchedulable);
+            // lookup
+            try {
+                instances.add((ScheduleSuperInterface) ctx.lookup(item.get("lookup")));
+            } catch (NamingException e) {
+                throw new RuntimeException(e);
+            } catch (ClassCastException e) {
+                // if the object is not of type ScheduleSuperInterface, we do not want it - skip
             }
-        } catch (NamingException e) {
-            throw new RuntimeException(e);
         }
 
         return instances;

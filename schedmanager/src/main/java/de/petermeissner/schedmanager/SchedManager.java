@@ -1,34 +1,50 @@
 package de.petermeissner.schedmanager;
 
+import de.petermeissner.schedmanager.util.JndiUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
-import share.ScheduleSuper;
-import util.JndiUtil;
+import share.ScheduleSuperInterface;
 
-import javax.naming.NamingException;
-import java.util.HashMap;
 import java.util.List;
 
 
 @Singleton
 @Startup
-public class SchedManager {
+public class SchedManager implements share.SchedManagerInterface {
+
     private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
+    // list of all ScheduleSuper instances to be managed
+    private List<ScheduleSuperInterface> scheduleSupers;
 
     @PostConstruct
     public void postConstruct() {
-        log.info("SchedManager initialized. Querying EJBs...");
+        registerScheduleSupers();
+    }
 
-        try {
-            List<HashMap<String, String>> objList = JndiUtil.listJndiItems("java:global");
-            objList.forEach(p -> log.info("Found in \"java:global\": \n  {} \n  {} \n  {}", p.get("path"), p.get("name"), p.get("lookup")));
-        } catch (NamingException e) {
-            log.error("Error during JNDI lookup", e);
-        }
+    /**
+     *
+     */
+    @Override
+    public void registerScheduleSupers() {
+        scheduleSupers = JndiUtil.lookupScheduleSupers();
+        log.info("Found {} instances of ScheduleSuper", scheduleSupers.size());
+        log.info("\n    Registered ScheduleSuper instances:\n    " + String.join("    \n", listSchedules()));
+    }
 
-        List<ScheduleSuper> instances = JndiUtil.lookupInstancesOfScheduleSuper();
-        log.info("Found {} instances of ScheduleSuper", instances.size());
+
+    /**
+     * Retrieves a list of schedule names from the registered ScheduleSuper instances.
+     *
+     * @return a list of schedule names as strings
+     */
+    public List<String> listSchedules() {
+        return scheduleSupers.stream()
+                .map(e -> e
+                        .toString()
+                        .replaceAll("^.*?\"", "")
+                        .replaceAll("\".*$", ""))
+                .toList();
     }
 }

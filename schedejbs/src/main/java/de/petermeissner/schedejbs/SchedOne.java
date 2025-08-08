@@ -7,11 +7,16 @@ import share.ScheduleSuper;
 
 @Singleton
 @Startup
-public class SchedOne extends ScheduleSuper {
+public class SchedOne extends ScheduleSuper implements share.ScheduleSuperInterface {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SchedOne.class);
 
     @PostConstruct
     public void init() {
         log.info("SchedOne initialized.");
+    }
+
+    @Override
+    public void run() {
+
     }
 }
