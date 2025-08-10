@@ -1,8 +1,8 @@
-package share;
+package share.schedule;
 
 import jakarta.ejb.Remote;
 
 @Remote
 public interface ScheduleSuperInterface {
-    void run();
+  void setEnabled(boolean enabled);
 }

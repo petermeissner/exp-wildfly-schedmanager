@@ -44,8 +44,33 @@ See commit:  56b0d70
 - checking EJBs for inheritance is hard because they are proxied and things like `instanceof` do not work as expected
 - listing and looking up EJBs works but there is a problem with using them because they cannot be cast to a type because they are proxied
 
-# Next Steps
 
-- lookup of all EJBs that are instances of a specific class
-- try casting to interface instead of class
+## Intercepting or Surrounding Method Call
 
+It would be very beneficial to encapsulate/surround/intercept the run method call in all schedules to ensure different things:
+- catch errors 
+- log start and end of the run
+- handle errors
+
+This does not seem to be an easy thing to implement since it is not easy in Java to intercept method calls. There seem to be some approaches that involve proxying, Aspect Oriented Programming, or CDI interceptors but this needs more investigation and propably also dome discussion.
+
+So, for now I skip solving this in the most perfect and elegant way but providing instead a simple guide on how to implent a schedule that makes use of the framework: 
+
+```java
+@Singleton
+@Startup
+public class SchedExample extends ScheduleSuper implements share.schedule.ScheduleSuperInterface {
+
+    public void run() {
+        // payload of the schedule, called by ScheduleSuper.runRun(this)
+    }
+
+    /**
+     * Schdule definition
+     */
+    @Schedule(hour = "*", minute = "*", second = "*/20", persistent = false)
+    public void schedule() {
+        runRun(this);
+    }
+}
+```

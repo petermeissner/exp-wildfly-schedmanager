@@ -4,14 +4,15 @@ import de.petermeissner.schedmanager.util.JndiUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
-import share.ScheduleSuperInterface;
+import share.schedule.ScheduleSuperInterface;
+import share.schedmanager.SchedManagerInterface;
 
 import java.util.List;
 
 
 @Singleton
 @Startup
-public class SchedManager implements share.SchedManagerInterface {
+public class SchedManager implements SchedManagerInterface {
 
     private final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(this.getClass());
 
@@ -24,7 +25,7 @@ public class SchedManager implements share.SchedManagerInterface {
     }
 
     /**
-     *
+     * Registers all ScheduleSuper instances found in the JNDI context.
      */
     @Override
     public void registerScheduleSupers() {

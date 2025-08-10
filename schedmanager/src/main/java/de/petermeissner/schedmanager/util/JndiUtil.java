@@ -1,6 +1,6 @@
 package de.petermeissner.schedmanager.util;
 
-import share.ScheduleSuperInterface;
+import share.schedule.ScheduleSuperInterface;
 
 import javax.naming.InitialContext;
 import javax.naming.NameClassPair;
@@ -128,15 +128,22 @@ public class JndiUtil {
 
         // go through all JNDI items in the "java:global" context and retrieve
         for (HashMap<String, String> item : items) {
-            Object obj;
-
-            // lookup
+            // lookup and cast
             try {
-                instances.add((ScheduleSuperInterface) ctx.lookup(item.get("lookup")));
+
+                Object obj = ctx.lookup(item.get("lookup"));
+                ScheduleSuperInterface sched = (ScheduleSuperInterface) obj;
+                instances.add(sched);
+
             } catch (NamingException e) {
+
                 throw new RuntimeException(e);
+
             } catch (ClassCastException e) {
-                // if the object is not of type ScheduleSuperInterface, we do not want it - skip
+
+                // If the object is not of type ScheduleSuperInterface, we do not want it - skip
+                // Important: Make sure that the class itself implements ScheduleSuperInterface, it is not enough that it just inherits from a superclass that implements the interface
+
             }
         }
 

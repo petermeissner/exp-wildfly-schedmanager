@@ -1,4 +1,4 @@
-package share;
+package share.schedmanager;
 
 import java.util.List;
 
