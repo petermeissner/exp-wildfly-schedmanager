@@ -14,6 +14,7 @@ import java.util.List;
 @lombok.Setter
 public class ScheduleStats {
 
+
     @lombok.Setter(AccessLevel.NONE)
     private Instant startupTs;
 
@@ -25,6 +26,9 @@ public class ScheduleStats {
 
     private int runsCount = 0;
 
+    /**
+     * List of runs that have been executed, used to keep track of run statistics.
+     */
     private List<ScheduleRunResult> runs = new java.util.ArrayList<>();
 
     private ScheduleStatsRunState runState = ScheduleStatsRunState.NEVER_STARTED;
@@ -75,17 +79,25 @@ public class ScheduleStats {
      * @param comment   addidtional information, e.g. error message in case of failure
      */
     public void logRunEnd(RunResult runResult, String comment) {
+        // end time stamp
         runEndTs = Instant.now();
+
+        // handle run state
         runState = ScheduleStatsRunState.NOT_RUNNING;
 
+        // add run result item
         ScheduleRunResult srr = new ScheduleRunResult();
-        srr.runsCount = runsCount;
-        srr.runStartTs = runStartTs;
-        srr.runEndTs = runEndTs;
-        srr.runResult = runResult;
-        srr.RunResultComment = comment;
+
+        srr.setRunsCount(runsCount);
+        srr.setRunStartTs(runStartTs);
+        srr.setRunEndTs(runEndTs);
+        srr.setRunResult(runResult);
+        srr.setRunResultComment(comment);
+        srr.setClassName(this.getClass().getName());
+
         runs.add(srr);
 
+        // make sure not too many runs are kept
         pruneRuns();
     }
 
@@ -93,53 +105,81 @@ public class ScheduleStats {
      * Clean up runs kept according to maximum size and maximum duration.
      */
     public void pruneRuns() {
+
         // keep only the last N runs
         while (runs.size() > keepStatsMaxN) {
             runs.remove(0); // Remove the oldest run if we exceed the max count
         }
 
         // keep only runs that are within the max duration from startup
-        runs.removeIf(r -> Duration.between(r.runEndTs, Instant.now()).compareTo(keepStatsMaxDuration) > 0);
+        runs.removeIf(r -> Duration.between(r.getRunEndTs(), Instant.now()).compareTo(keepStatsMaxDuration) > 0);
     }
 
     /**
      * @see #logRunEnd(RunResult, String)
      */
-    public void logRunEndFailure(String comment) {
+    public void logRunEndFailure(Throwable e) {
         runEndTs = Instant.now();
-        logRunEnd(RunResult.FAILURE, comment);
+        String errorMessage = e.getMessage() != null ? e.getMessage() : "No error message available";
+        if (e.getCause() != null && e.getCause().getMessage() != null) {
+            errorMessage += "\n (cause: " + e.getCause().getMessage() + ")";
+        }
+        logRunEnd(RunResult.FAILURE, errorMessage);
     }
 
+    /**
+     * Log a run that was skipped, e.g. because the schedule is not enabled.
+     *
+     * @param comment additional information about why the run was skipped
+     */
+    public void logRunSkipped(String comment) {
+        runEndTs = Instant.now();
+        logRunEnd(RunResult.SKIPPED, comment);
+    }
 
+    /**
+     * @see #getMeasureAggregates(Boolean)
+     */
     public HashMap<String, String> getMeasureAggregates() {
+        return getMeasureAggregates(null);
+    }
+
+    /**
+     * Get the list of runs that have been executed.
+     */
+    public HashMap<String, String> getMeasureAggregates(Boolean scheduleEnabled) {
         HashMap<String, String> hm = new HashMap<>();
+
+        hm.put("className", this.getClass().getName());
 
         hm.put("N", String.valueOf(runs.size()));
 
+        hm.put("enabled", String.valueOf(scheduleEnabled)); // Assuming the schedule is enabled, adjust as needed
+
         hm.put("firstStart",
                 runs.stream()
-                        .map(run -> run.runStartTs)
+                        .map(ScheduleRunResult::getRunStartTs)
                         .min(Instant::compareTo)
                         .orElse(null).toString()
         );
 
         hm.put("lastStart",
                 runs.stream()
-                        .map(run -> run.runStartTs)
+                        .map(ScheduleRunResult::getRunStartTs)
                         .max(Instant::compareTo)
                         .orElse(null).toString()
         );
 
         hm.put("firstEnd",
                 runs.stream()
-                        .map(run -> run.runEndTs)
+                        .map(ScheduleRunResult::getRunEndTs)
                         .min(Instant::compareTo)
                         .orElse(null).toString()
         );
 
         hm.put("lastEnd",
                 runs.stream()
-                        .map(run -> run.runEndTs)
+                        .map(ScheduleRunResult::getRunEndTs)
                         .max(Instant::compareTo)
                         .orElse(null).toString()
         );
@@ -147,7 +187,7 @@ public class ScheduleStats {
         hm.put("averageDuration",
                 String.valueOf(
                         runs.stream()
-                                .mapToLong(run -> Duration.between(run.runStartTs, run.runEndTs).toSeconds())
+                                .mapToLong(run -> Duration.between(run.getRunStartTs(), run.getRunEndTs()).toSeconds())
                                 .average()
                                 .orElse(0)
                 ));
@@ -155,76 +195,63 @@ public class ScheduleStats {
         hm.put("successN",
                 String.valueOf(
                         runs.stream()
-                                .filter(run -> run.runResult.isSuccess())
+                                .filter(run -> run.getRunResult().isSuccess())
                                 .count()
                 ));
 
         hm.put("failureN",
                 String.valueOf(
                         runs.stream()
-                                .filter(run -> run.runResult.isFailure())
+                                .filter(run -> run.getRunResult().isFailure())
                                 .count()
                 ));
 
         hm.put("successRate",
                 String.valueOf(
                         runs.stream()
-                                .filter(run -> run.runResult.isSuccess())
+                                .filter(run -> run.getRunResult().isSuccess())
                                 .count() * 100.0 / runs.size()
                 ));
 
         hm.put("failureRate",
                 String.valueOf(
                         runs.stream()
-                                .filter(run -> run.runResult.isFailure())
+                                .filter(run -> run.getRunResult().isFailure())
                                 .count() * 100.0 / runs.size()
                 ));
 
         hm.put("runsPerHour",
                 String.valueOf(
                         runs.stream()
-                                .mapToLong(run -> Duration.between(run.runStartTs, run.runEndTs).toSeconds())
+                                .mapToLong(run -> Duration.between(run.getRunStartTs(), run.getRunEndTs()).toSeconds())
                                 .sum() / 3600.0
                 ));
 
         hm.put("runsPerDay",
                 String.valueOf(
                         runs.stream()
-                                .mapToLong(run -> Duration.between(run.runStartTs, run.runEndTs).toSeconds())
+                                .mapToLong(run -> Duration.between(run.getRunStartTs(), run.getRunEndTs()).toSeconds())
                                 .sum() / 86400.0
                 ));
 
         hm.put("failuresPerDay",
                 String.valueOf(
                         runs.stream()
-                                .filter(run -> run.runResult.isFailure())
-                                .mapToLong(run -> Duration.between(run.runStartTs, run.runEndTs).toSeconds())
+                                .filter(run -> run.getRunResult().isFailure())
+                                .mapToLong(run -> Duration.between(run.getRunStartTs(), run.getRunEndTs()).toSeconds())
                                 .sum() / 86400.0
                 ));
 
         hm.put("failuresPerHour",
                 String.valueOf(
                         runs.stream()
-                                .filter(run -> run.runResult.isFailure())
-                                .mapToLong(run -> Duration.between(run.runStartTs, run.runEndTs).toSeconds())
+                                .filter(run -> run.getRunResult().isFailure())
+                                .mapToLong(run -> Duration.between(run.getRunStartTs(), run.getRunEndTs()).toSeconds())
                                 .sum() / 3600.0
                 ));
 
         return hm;
     }
 
-    public void logRunSkipped(String comment) {
-        runEndTs = Instant.now();
-        runState = ScheduleStatsRunState.NOT_RUNNING;
 
-        ScheduleRunResult srr = new ScheduleRunResult();
-        srr.runsCount = runsCount;
-        srr.runStartTs = runStartTs;
-        srr.runEndTs = runEndTs;
-        srr.runResult = RunResult.SKIPPED;
-        srr.RunResultComment = comment;
-        runs.add(srr);
-
-        pruneRuns();
-    }
 }

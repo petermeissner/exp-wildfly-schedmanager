@@ -15,7 +15,7 @@ public class SchedOne extends ScheduleSuper implements share.schedule.ScheduleSu
 
     @PostConstruct
     public void init() {
-        super.setEnabled(true);
+//        super.setEnabled(true);
         log.info("SchedOne initialized.");
     }
 

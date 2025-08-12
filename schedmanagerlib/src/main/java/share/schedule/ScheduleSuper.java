@@ -6,6 +6,9 @@ import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.inject.Inject;
 import share.schedmanager.SchedManagerInterface;
 
+import java.util.HashMap;
+import java.util.List;
+
 /**
  * This is the base class for all schedule to be managed by SchedManager.
  * <p>
@@ -87,7 +90,7 @@ public abstract class ScheduleSuper implements ScheduleSuperInterface {
     }
 
     public void handleError(Throwable e) {
-        scheduleStats.logRunEndFailure(e.getMessage());
+        scheduleStats.logRunEndFailure(e);
         log.error("Schedule {} run failed", this.getClass().getName(), e);
 
     }
@@ -112,4 +115,25 @@ public abstract class ScheduleSuper implements ScheduleSuperInterface {
      * </ul>
      */
     public abstract void schedule();
+
+    /**
+     * Returns a map of aggregates for the schedule statistics.
+     */
+    public HashMap<String, String> getScheduleStatsMeasureAggregates() {
+        return scheduleStats.getMeasureAggregates(isEnabled());
+    }
+
+
+    /**
+     * Returns a list of ScheduleRunResult objects representing the results of the schedule runs.
+     */
+    public List<ScheduleRunResult> getScheduleRunResults() {
+        // get runs
+        List<ScheduleRunResult> runs = scheduleStats.getRuns();
+
+        // add schedule class name to each run
+        runs.forEach(e -> e.setClassName(this.getClass().getSimpleName()));
+
+        return runs;
+    }
 }
